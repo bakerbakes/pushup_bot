@@ -1,0 +1,39 @@
+# systemd service for pushup_bot.
+#
+# This makes the bot:
+#   - start automatically on VM boot
+#   - restart automatically if it crashes
+#   - keep writing to the same pushup_bot.db file across restarts
+#
+# INSTALL:
+#   1. Edit the two paths below (WorkingDirectory / ExecStart) and the
+#      User to match your actual deployment.
+#   2. sudo cp pushup_bot.service /etc/systemd/system/pushup_bot.service
+#   3. sudo systemctl daemon-reload
+#   4. sudo systemctl enable --now pushup_bot
+#
+# See DEPLOY.md for the full walkthrough.
+
+[Unit]
+Description=pushup_bot Discord bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# The Linux user to run the bot as. Avoid running as root.
+User=pushupbot
+# Directory containing bot.py, db.py, messages.py, .env, and where
+# pushup_bot.db will live.
+WorkingDirectory=/opt/pushup_bot
+# Path to the venv's python + the script.
+ExecStart=/opt/pushup_bot/venv/bin/python3 /opt/pushup_bot/bot.py
+Restart=on-failure
+RestartSec=5
+# Environment variables (DISCORD_TOKEN, GIPHY_API_KEY, DB_PATH) are
+# loaded from .env by python-dotenv inside bot.py, so nothing extra
+# is needed here -- but you could also set EnvironmentFile=/opt/pushup_bot/.env
+# if you'd rather systemd inject them directly.
+
+[Install]
+WantedBy=multi-user.target

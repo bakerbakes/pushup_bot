@@ -1,0 +1,13 @@
+# Secrets -- never commit this
+.env
+
+# Local database (each deployment has its own)
+*.db
+*.db-journal
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+*.egg-info/
