@@ -154,3 +154,30 @@ For running this 24/7 on a free VM (Oracle Cloud Always Free, Google
 Cloud e2-micro Always Free), see **DEPLOY.md** — it walks through
 setup, a systemd service so the bot survives reboots and crashes,
 and keeping `pushup_bot.db` persistent on disk.
+
+### Deploying on Wispbyte
+
+Wispbyte is a panel host (Pterodactyl-style) rather than a raw VM, so
+none of the systemd/VM steps in DEPLOY.md apply here -- the panel
+handles process supervision itself.
+
+1. **Upload only the code the bot needs to run:**
+   - `bot.py`, `db.py`, `messages.py`, `requirements.txt`
+   - `requirements.txt` must keep that exact lowercase name and sit
+     in the same folder as `bot.py`, or Wispbyte won't detect it and
+     auto-install the dependencies.
+   - Don't upload `venv/`, `__pycache__/`, `pushup_bot.db`, `.git/`,
+     `DEPLOY.md`, or `pushup_bot.service` -- none of that belongs on
+     a panel host. `venv/` and `pushup_bot.db` get recreated
+     automatically (Wispbyte manages its own Python environment from
+     `requirements.txt`; the DB is created fresh by `init_db()` on
+     first run, which also means the 100-day clock starts counting
+     from whenever you first boot it there).
+2. **Set the secrets directly on the panel, not from git** (your
+   `.env` is correctly excluded from the repo, so it won't come along
+   with a git-based deploy):
+   - If Wispbyte's panel has a **Startup Variables** tab, set
+     `DISCORD_TOKEN` (and `GIPHY_API_KEY` if you're using one) there.
+   - Otherwise, create a new `.env` file directly in Wispbyte's file
+     manager and fill it in the same way as `.env.example`.
+3. **Set the startup command** to `python bot.py`.
