@@ -5,9 +5,11 @@ Uses a plain SQLite file so the bot needs zero external services.
 Everything is keyed by (guild_id, user_id) so the bot can run in
 multiple servers at once.
 
-The 100-day challenge clock is global, not per-guild: it starts 24
-hours after the bot's first-ever deploy (see bot_state.deploy_time)
-and runs out once, for every server the bot is in.
+The 100-day challenge clock is global, not per-guild: day 1 starts at
+the first Eastern-time midnight at least 24 hours after the bot's
+first-ever deploy (see bot_state.deploy_time), and every day after
+that flips at Eastern midnight too. It runs out once, for every
+server the bot is in.
 """
 
 import sqlite3
@@ -19,6 +21,11 @@ from contextlib import contextmanager
 DB_PATH = os.getenv("DB_PATH", "pushup_bot.db")
 CHALLENGE_LENGTH_DAYS = 100
 DAILY_GOAL = 100
+
+# Reference zone for the global day-of-100 rollover (distinct from each
+# participant's own /pushuptimezone, which only governs their personal
+# daily-goal / inactivity boundaries). Days flip at midnight here.
+CHALLENGE_TIMEZONE = ZoneInfo("America/New_York")
 
 
 def init_db():
@@ -130,17 +137,30 @@ def get_deploy_time() -> datetime:
 
 
 def get_challenge_start() -> datetime:
-    """The day-1 anchor: 24 hours after the bot's first-ever deploy."""
-    return get_deploy_time() + timedelta(hours=24)
+    """The day-1 anchor: the first Eastern-time midnight that falls at
+    least 24 hours after the bot's first-ever deploy (so day 1 always
+    starts at a clean local midnight, not an arbitrary time of day)."""
+    earliest = get_deploy_time() + timedelta(hours=24)
+    earliest_local = earliest.astimezone(CHALLENGE_TIMEZONE)
+    midnight_local = datetime(
+        earliest_local.year, earliest_local.month, earliest_local.day,
+        tzinfo=CHALLENGE_TIMEZONE,
+    )
+    if midnight_local < earliest_local:
+        midnight_local += timedelta(days=1)
+    return midnight_local.astimezone(timezone.utc)
 
 
 def get_day_number() -> int:
     """1-indexed day of the bot's single, server-wide 100-day lifespan.
-    Returns 0 during the 24-hour pre-launch buffer, before day 1 starts."""
-    elapsed = datetime.now(timezone.utc) - get_challenge_start()
-    if elapsed.total_seconds() < 0:
+    Returns 0 before day 1's Eastern midnight has arrived. Compares
+    Eastern calendar dates (not a raw 24h timedelta) so the day always
+    flips exactly at Eastern midnight, DST transitions included."""
+    now_local = datetime.now(timezone.utc).astimezone(CHALLENGE_TIMEZONE)
+    start_local = get_challenge_start().astimezone(CHALLENGE_TIMEZONE)
+    if now_local < start_local:
         return 0
-    return elapsed.days + 1
+    return (now_local.date() - start_local.date()).days + 1
 
 
 def get_days_remaining() -> int:

@@ -7,9 +7,13 @@ members opt in, log sets throughout the day, and get called out
 ## How it works
 
 - The bot has a single, **bot-wide 100-day lifespan** — it's not
-  per-server. Day 1 starts 24 hours after the bot's first-ever
-  deploy, and the same countdown applies to every server it's in,
-  no matter when that server added it.
+  per-server. Day 1 starts at the first Eastern-time midnight that's
+  at least 24 hours after the bot's first-ever deploy, and every day
+  after that flips at Eastern midnight too. The same countdown
+  applies to every server it's in, no matter when that server added
+  it. (This reference zone is separate from each participant's own
+  `/pushuptimezone` setting, which only affects their personal
+  daily-goal and inactivity boundaries.)
 - `/pushupjoin` — opt in. Optionally pick your timezone (Eastern,
   Central, Mountain, or Pacific) so your daily reset lines up with
   your day instead of the server's; defaults to UTC if skipped.
