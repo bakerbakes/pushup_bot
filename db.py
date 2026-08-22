@@ -90,6 +90,16 @@ def init_db():
 @contextmanager
 def _connect():
     conn = sqlite3.connect(DB_PATH)
+    # WAL mode (tried first) needs shared-memory file locking that
+    # doesn't work reliably on every container filesystem -- it caused
+    # "disk I/O error" on this host. MEMORY journal mode instead keeps
+    # SQLite's temporary rollback data in RAM rather than writing any
+    # extra file to disk at all, avoiding this whole class of
+    # filesystem-compatibility problem. Trade-off: if the process is
+    # killed mid-write, that one write could be lost (rather than
+    # cleanly rolled back) -- an acceptable risk for this bot's data.
+    conn.execute("PRAGMA journal_mode=MEMORY")
+    conn.execute("PRAGMA temp_store=MEMORY")
     try:
         yield conn
         conn.commit()

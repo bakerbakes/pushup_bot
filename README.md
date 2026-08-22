@@ -181,3 +181,11 @@ handles process supervision itself.
    - Otherwise, create a new `.env` file directly in Wispbyte's file
      manager and fill it in the same way as `.env.example`.
 3. **Set the startup command** to `python bot.py`.
+
+**Known gotcha:** SQLite's default journal mode can throw a `disk I/O
+error` on Wispbyte's container filesystem (WAL-style journaling needs
+shared-memory file locking that doesn't work reliably there). `db.py`
+already works around this by setting `PRAGMA journal_mode=MEMORY` on
+every connection, so this shouldn't bite you -- worth knowing about if
+you ever see that error after changing `db.py`, since it's easy to
+reintroduce by dropping that pragma.

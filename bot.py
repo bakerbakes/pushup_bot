@@ -19,6 +19,7 @@ announces its own end and goes quiet everywhere it's running.
 
 import os
 import logging
+import sqlite3
 from datetime import date
 
 import aiohttp
@@ -372,16 +373,37 @@ async def pushupsetchannel_error(interaction: discord.Interaction, error):
 async def on_app_command_error(
     interaction: discord.Interaction, error: app_commands.AppCommandError
 ):
+    """
+    Global fallback. Skips errors a command's own handler already dealt
+    with (discord.py calls both), replies with the destroyed-challenge
+    message for the not_destructed gate, gives a friendlier message for
+    a DB hiccup, and otherwise tells the user to try again instead of
+    leaving Discord's unhelpful "The application did not respond".
+    """
     if isinstance(error, app_commands.MissingPermissions):
         return  # already handled by pushupsetchannel's own error handler
+
     if isinstance(error, app_commands.CheckFailure):
         msg = messages.destroyed_reply_message()
+    else:
+        original = getattr(error, "original", error)
+        if isinstance(original, sqlite3.OperationalError):
+            log.error(f"Database error on command: {original}")
+            msg = (
+                "Hit a temporary storage hiccup logging that -- nothing lost, "
+                "just try the command again in a moment."
+            )
+        else:
+            log.exception(f"Unhandled app command error: {error}")
+            msg = "Something went wrong running that command. Try again in a moment."
+
+    try:
         if interaction.response.is_done():
             await interaction.followup.send(msg, ephemeral=True)
         else:
             await interaction.response.send_message(msg, ephemeral=True)
-        return
-    log.exception(f"Unhandled app command error: {error}")
+    except discord.HTTPException:
+        pass  # interaction already expired, nothing more we can do
 
 
 @tasks.loop(hours=24)
