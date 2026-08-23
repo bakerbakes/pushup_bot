@@ -17,6 +17,16 @@ log = logging.getLogger("pushup_bot")
 GIPHY_API_KEY = os.getenv("GIPHY_API_KEY")
 GIPHY_SEARCH_URL = "https://api.giphy.com/v1/gifs/random"
 
+if GIPHY_API_KEY:
+    log.info("GIPHY_API_KEY found -- live gifs enabled.")
+else:
+    log.warning(
+        "GIPHY_API_KEY not set -- always using the static gif fallback lists. "
+        "If you expected a key to be picked up, check it's actually reaching "
+        "the process before this module is imported (e.g. a .env file needs "
+        "load_dotenv() to run first)."
+    )
+
 # Shown when a user runs /pushupjoin
 JOIN_MESSAGES = [
     "Look at you, already built like a house. Signing you up now -- 100 push-ups a day, 100 days. Let's go.",

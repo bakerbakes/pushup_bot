@@ -28,6 +28,8 @@ from discord import app_commands
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
 
+load_dotenv()  # must run before importing db/messages -- both read env vars at import time
+
 import db
 import messages
 
@@ -40,7 +42,6 @@ TIMEZONE_CHOICES = [
     app_commands.Choice(name="Pacific (PST/PDT)", value="America/Los_Angeles"),
 ]
 
-load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 
 logging.basicConfig(level=logging.INFO)
