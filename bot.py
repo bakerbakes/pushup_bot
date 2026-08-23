@@ -30,6 +30,9 @@ from dotenv import load_dotenv
 
 load_dotenv()  # must run before importing db/messages -- both read env vars at import time
 
+logging.basicConfig(level=logging.INFO)  # must also run first -- both modules log at import time
+log = logging.getLogger("pushup_bot")
+
 import db
 import messages
 
@@ -43,9 +46,6 @@ TIMEZONE_CHOICES = [
 ]
 
 TOKEN = os.getenv("DISCORD_TOKEN")
-
-logging.basicConfig(level=logging.INFO)
-log = logging.getLogger("pushup_bot")
 
 intents = discord.Intents.default()
 
